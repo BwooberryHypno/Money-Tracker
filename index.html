@@ -181,8 +181,6 @@ button:active {
 <div id="mainContainer">
     <div id="moneyDisplay">$0.00</div>
     
-    <div id="statusBar">Stopped • 0h 0m</div>
-    
     <div class="control-group">
         <label>Starting Amount</label>
         <input id="startingMoney" type="number" value="0" step="0.01">
@@ -233,21 +231,23 @@ function init() {
 
 function updateDisplay() {
     document.getElementById("moneyDisplay").innerHTML = "$" + currentMoney.toFixed(2);
-    let hours = Math.floor(secondsWorked / 3600);
-    let mins = Math.floor((secondsWorked % 3600) / 60);
-    document.getElementById("statusBar").innerHTML = (running ? "Running" : "Stopped") + " • " + hours + "h " + mins + "m";
 }
 
 function startTimer() {
     if(running) return;
     hourlyRate = parseFloat(document.getElementById("hourlyRate").value) || 0;
     running = true;
+    
+    // Calculate how many milliseconds per penny
+    // hourlyRate dollars per hour = hourlyRate * 100 pennies per hour
+    // 3600000 milliseconds in an hour
+    let msPerPenny = 3600000 / (hourlyRate * 100);
+    
     timer = setInterval(() => {
-        secondsWorked++;
-        let earned = (hourlyRate / 3600);
-        currentMoney += earned;
+        currentMoney += 0.01; // Always add exactly 1 penny
+        secondsWorked = (currentMoney - parseFloat(document.getElementById("startingMoney").value || 0)) / hourlyRate * 3600;
         updateDisplay();
-    }, 1000);
+    }, msPerPenny);
 }
 
 function stopTimer() {
