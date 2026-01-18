@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Money Tracker</title>
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    color: #4da6ff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
+    overflow-x: hidden;
+}
+
+#mainContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 8px;
+}
+
+#moneyDisplay {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    margin: 15px 0;
+    color: #00ff00;
+}
+
+.control-group {
+    margin: 8px 0;
+}
+
+.control-group label {
+    display: block;
+    font-size: 11px;
+    margin-bottom: 3px;
+    color: #888;
+}
+
+input {
+    width: 100%;
+    font-size: 14px;
+    padding: 8px;
+    margin: 3px 0;
+    background-color: #1a1a1a;
+    color: #fff;
+    border: 1px solid #333;
+    border-radius: 8px;
+}
+
+.button-row {
+    display: flex;
+    gap: 5px;
+    margin: 5px 0;
+}
+
+button {
+    flex: 1;
+    font-size: 13px;
+    padding: 10px 5px;
+    background-color: #4da6ff;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    touch-action: manipulation;
+}
+
+button.start { background-color: #00ff00; }
+button.stop { background-color: #ff3b30; }
+button.add { background-color: #34c759; }
+button.subtract { background-color: #ff9500; }
+
+#statusBar {
+    font-size: 10px;
+    text-align: center;
+    margin: 8px 0;
+    color: #666;
+}
+
+#achievementBadge {
+    position: fixed;
+    top: 5px;
+    right: 5px;
+    background-color: #ff3b30;
+    color: #fff;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+#achievementList {
+    font-size: 10px;
+    max-height: 100px;
+    overflow-y: auto;
+    margin-top: 10px;
+    padding: 5px;
+    background-color: #1a1a1a;
+    border-radius: 5px;
+}
+
+.achievement {
+    padding: 4px;
+    margin: 2px 0;
+    opacity: 0.3;
+}
+
+.achievement.unlocked {
+    opacity: 1;
+    color: #00ff00;
+}
+
+#popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background-color: #1a3a6a;
+    padding: 15px;
+    border-radius: 10px;
+    color: #00ff00;
+    font-size: 14px;
+    text-align: center;
+    opacity: 0;
+    z-index: 2000;
+    box-shadow: 0 0 20px #4da6ff;
+    transition: all 0.3s;
+    max-width: 90%;
+}
+
+.show-popup {
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+}
+
+.redInput { border-color: #ff3b30 !important; }
+.greenInput { border-color: #34c759 !important; }
+
+/* Simple mode styles */
+.simple-mode #mainContainer {
+    justify-content: center;
+    align-items: center;
+}
+
+.simple-mode #moneyDisplay {
+    font-size: 48px;
+    margin: 20px 0;
+}
+
+.simple-mode .control-group,
+.simple-mode .button-row:not(.toggle-row),
+.simple-mode #statusBar,
+.simple-mode #achievementList {
+    display: none;
+}
+
+.simple-mode .toggle-row {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+}
+</style>
+</head>
+<body>
+
+<div id="mainContainer">
+    <div id="moneyDisplay">$0.00</div>
+    
+    <div id="statusBar">Stopped • 0h 0m</div>
+    
+    <div class="control-group">
+        <label>Starting Amount</label>
+        <input id="startingMoney" type="number" value="0" step="0.01">
+    </div>
+    
+    <div class="control-group">
+        <label>Hourly Rate</label>
+        <input id="hourlyRate" type="number" value="10" step="0.5">
+    </div>
+    
+    <div class="button-row">
+        <button class="start" onclick="startTimer()">Start</button>
+        <button class="stop" onclick="stopTimer()">Stop</button>
+        <button onclick="reset()">Reset</button>
+    </div>
+    
+    <div class="control-group">
+        <label>Add/Subtract Money</label>
+        <input id="quickAmount" type="number" placeholder="Amount" step="0.01">
+    </div>
+    
+    <div class="button-row">
+        <button class="add" onclick="addMoney()">+ Add</button>
+        <button class="subtract" onclick="subtractExpense()">- Deduct</button>
+    </div>
+    
+    <div id="achievementList"></div>
+    
+    <div class="button-row toggle-row">
+        <button onclick="toggleSimpleMode()">Toggle Simple View</button>
+    </div>
+</div>
+
+<div id="achievementBadge" style="display:none;">0</div>
+<div id="popup"></div>
+
+<script>
+let timer;
+let running = false;
+let currentMoney = 0;
+let hourlyRate = 0;
+let secondsWorked = 0;
+let weeklyEarnings = 0;
+
+let achievements = [
+    {name:"First Buck", desc:"Reach $1", unlocked:false},
+    {name:"Work 1hr", desc:"1 hour worked", unlocked:false},
+    {name:"Work 2hr", desc:"2 hours worked", unlocked:false},
+    {name:"Work 4hr", desc:"4 hours worked", unlocked:false},
+    {name:"Work 8hr", desc:"8 hours worked", unlocked:false},
+    {name:"$100 Week", desc:"Earn $100/week", unlocked:false},
+    {name:"$200 Week", desc:"Earn $200/week", unlocked:false}
+];
+
+function init() {
+    updateDisplay();
+    renderAchievements();
+    document.getElementById("startingMoney").addEventListener('input', function() {
+        currentMoney = parseFloat(this.value) || 0;
+        updateDisplay();
+    });
+}
+
+function updateDisplay() {
+    document.getElementById("moneyDisplay").innerHTML = "$" + currentMoney.toFixed(2);
+    let hours = Math.floor(secondsWorked / 3600);
+    let mins = Math.floor((secondsWorked % 3600) / 60);
+    document.getElementById("statusBar").innerHTML = (running ? "Running" : "Stopped") + " • " + hours + "h " + mins + "m";
+    checkAchievements();
+}
+
+function startTimer() {
+    if(running) return;
+    hourlyRate = parseFloat(document.getElementById("hourlyRate").value) || 0;
+    running = true;
+    timer = setInterval(() => {
+        secondsWorked++;
+        let earned = (hourlyRate / 3600);
+        currentMoney += earned;
+        weeklyEarnings += earned;
+        updateDisplay();
+    }, 1000);
+}
+
+function stopTimer() {
+    running = false;
+    clearInterval(timer);
+    updateDisplay();
+}
+
+function reset() {
+    stopTimer();
+    currentMoney = 0;
+    secondsWorked = 0;
+    weeklyEarnings = 0;
+    achievements.forEach(a => a.unlocked = false);
+    updateDisplay();
+    renderAchievements();
+}
+
+function addMoney() {
+    let input = document.getElementById("quickAmount");
+    let amt = parseFloat(input.value) || 0;
+    if(amt === 0) return;
+    input.classList.add("greenInput");
+    currentMoney += amt;
+    updateDisplay();
+    input.value = "";
+    setTimeout(() => input.classList.remove("greenInput"), 1000);
+}
+
+function subtractExpense() {
+    let input = document.getElementById("quickAmount");
+    let amt = parseFloat(input.value) || 0;
+    if(amt === 0) return;
+    input.classList.add("redInput");
+    currentMoney -= amt;
+    updateDisplay();
+    input.value = "";
+    setTimeout(() => input.classList.remove("redInput"), 1000);
+}
+
+function checkAchievements() {
+    let newUnlock = false;
+    achievements.forEach(ach => {
+        if(ach.unlocked) return;
+        let unlock = false;
+        if(ach.name === "First Buck" && currentMoney >= 1) unlock = true;
+        if(ach.name === "Work 1hr" && secondsWorked >= 3600) unlock = true;
+        if(ach.name === "Work 2hr" && secondsWorked >= 7200) unlock = true;
+        if(ach.name === "Work 4hr" && secondsWorked >= 14400) unlock = true;
+        if(ach.name === "Work 8hr" && secondsWorked >= 28800) unlock = true;
+        if(ach.name === "$100 Week" && weeklyEarnings >= 100) unlock = true;
+        if(ach.name === "$200 Week" && weeklyEarnings >= 200) unlock = true;
+        
+        if(unlock) {
+            ach.unlocked = true;
+            newUnlock = true;
+            showPopup(ach.name + "!");
+        }
+    });
+    if(newUnlock) renderAchievements();
+}
+
+function renderAchievements() {
+    let html = "";
+    let count = 0;
+    achievements.forEach(ach => {
+        if(ach.unlocked) count++;
+        html += `<div class="achievement ${ach.unlocked ? 'unlocked' : ''}">${ach.unlocked ? '✓' : '○'} ${ach.name}</div>`;
+    });
+    document.getElementById("achievementList").innerHTML = html;
+    let badge = document.getElementById("achievementBadge");
+    if(count > 0) {
+        badge.style.display = "block";
+        badge.innerHTML = count;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function showPopup(text) {
+    let popup = document.getElementById("popup");
+    popup.innerHTML = text;
+    popup.classList.add("show-popup");
+    setTimeout(() => {
+        popup.classList.remove("show-popup");
+    }, 2000);
+}
+
+function toggleSimpleMode() {
+    document.body.classList.toggle("simple-mode");
+}
+
+init();
+</script>
+
+</body>
+</html>
