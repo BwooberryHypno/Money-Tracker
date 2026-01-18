@@ -10,8 +10,8 @@ html, body {
     height: 100%;
     margin: 0;
     padding: 0;
-    background-color: #000;
-    color: #4da6ff;
+    background: linear-gradient(135deg, #0a1929 0%, #1a2332 100%);
+    color: #ffffff;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial;
     overflow-x: hidden;
 }
@@ -28,7 +28,8 @@ html, body {
     font-weight: bold;
     text-align: center;
     margin: 15px 0;
-    color: #00ff00;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(135, 206, 250, 0.5);
 }
 
 .control-group {
@@ -39,7 +40,7 @@ html, body {
     display: block;
     font-size: 11px;
     margin-bottom: 3px;
-    color: #888;
+    color: #b0c4de;
 }
 
 input {
@@ -47,9 +48,9 @@ input {
     font-size: 14px;
     padding: 8px;
     margin: 3px 0;
-    background-color: #1a1a1a;
-    color: #fff;
-    border: 1px solid #333;
+    background-color: #1e3a5f;
+    color: #ffffff;
+    border: 1px solid #2d5a8c;
     border-radius: 8px;
 }
 
@@ -63,36 +64,39 @@ button {
     flex: 1;
     font-size: 13px;
     padding: 10px 5px;
-    background-color: #4da6ff;
-    color: #000;
+    background-color: #87ceeb;
+    color: #0a1929;
     border: none;
     border-radius: 8px;
     font-weight: 600;
     touch-action: manipulation;
+    box-shadow: 0 2px 8px rgba(135, 206, 250, 0.3);
+    transition: all 0.2s;
 }
 
-button.start { background-color: #00ff00; }
-button.stop { background-color: #ff3b30; }
-button.add { background-color: #34c759; }
-button.subtract { background-color: #ff9500; }
+button:active {
+    transform: scale(0.95);
+    box-shadow: 0 1px 4px rgba(135, 206, 250, 0.4);
+}
 
 #statusBar {
     font-size: 10px;
     text-align: center;
     margin: 8px 0;
-    color: #666;
+    color: #b0c4de;
 }
 
 #achievementBadge {
     position: fixed;
     top: 5px;
     right: 5px;
-    background-color: #ff3b30;
+    background-color: #ff6b9d;
     color: #fff;
     border-radius: 10px;
     padding: 2px 6px;
     font-size: 10px;
     font-weight: bold;
+    box-shadow: 0 2px 6px rgba(255, 107, 157, 0.4);
 }
 
 #achievementList {
@@ -101,8 +105,9 @@ button.subtract { background-color: #ff9500; }
     overflow-y: auto;
     margin-top: 10px;
     padding: 5px;
-    background-color: #1a1a1a;
+    background-color: rgba(30, 58, 95, 0.5);
     border-radius: 5px;
+    border: 1px solid #2d5a8c;
 }
 
 .achievement {
@@ -113,7 +118,8 @@ button.subtract { background-color: #ff9500; }
 
 .achievement.unlocked {
     opacity: 1;
-    color: #00ff00;
+    color: #5fd3bc;
+    font-weight: 600;
 }
 
 #popup {
@@ -121,17 +127,18 @@ button.subtract { background-color: #ff9500; }
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
-    background-color: #1a3a6a;
+    background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8c 100%);
     padding: 15px;
     border-radius: 10px;
-    color: #00ff00;
+    color: #ffffff;
     font-size: 14px;
     text-align: center;
     opacity: 0;
     z-index: 2000;
-    box-shadow: 0 0 20px #4da6ff;
+    box-shadow: 0 0 20px rgba(135, 206, 250, 0.6);
     transition: all 0.3s;
     max-width: 90%;
+    border: 2px solid #87ceeb;
 }
 
 .show-popup {
@@ -139,8 +146,8 @@ button.subtract { background-color: #ff9500; }
     transform: translate(-50%, -50%) scale(1) !important;
 }
 
-.redInput { border-color: #ff3b30 !important; }
-.greenInput { border-color: #34c759 !important; }
+.redInput { border-color: #ff6b9d !important; box-shadow: 0 0 8px rgba(255, 107, 157, 0.4); }
+.greenInput { border-color: #5fd3bc !important; box-shadow: 0 0 8px rgba(95, 211, 188, 0.4); }
 
 /* Simple mode styles */
 .simple-mode #mainContainer {
@@ -187,8 +194,8 @@ button.subtract { background-color: #ff9500; }
     </div>
     
     <div class="button-row">
-        <button class="start" onclick="startTimer()">Start</button>
-        <button class="stop" onclick="stopTimer()">Stop</button>
+        <button onclick="startTimer()">Start</button>
+        <button onclick="stopTimer()">Stop</button>
         <button onclick="reset()">Reset</button>
     </div>
     
@@ -198,18 +205,15 @@ button.subtract { background-color: #ff9500; }
     </div>
     
     <div class="button-row">
-        <button class="add" onclick="addMoney()">+ Add</button>
-        <button class="subtract" onclick="subtractExpense()">- Deduct</button>
+        <button onclick="addMoney()">Add</button>
+        <button onclick="subtractExpense()">Deduct</button>
     </div>
-    
-    <div id="achievementList"></div>
     
     <div class="button-row toggle-row">
         <button onclick="toggleSimpleMode()">Toggle Simple View</button>
     </div>
 </div>
 
-<div id="achievementBadge" style="display:none;">0</div>
 <div id="popup"></div>
 
 <script>
@@ -218,21 +222,9 @@ let running = false;
 let currentMoney = 0;
 let hourlyRate = 0;
 let secondsWorked = 0;
-let weeklyEarnings = 0;
-
-let achievements = [
-    {name:"First Buck", desc:"Reach $1", unlocked:false},
-    {name:"Work 1hr", desc:"1 hour worked", unlocked:false},
-    {name:"Work 2hr", desc:"2 hours worked", unlocked:false},
-    {name:"Work 4hr", desc:"4 hours worked", unlocked:false},
-    {name:"Work 8hr", desc:"8 hours worked", unlocked:false},
-    {name:"$100 Week", desc:"Earn $100/week", unlocked:false},
-    {name:"$200 Week", desc:"Earn $200/week", unlocked:false}
-];
 
 function init() {
     updateDisplay();
-    renderAchievements();
     document.getElementById("startingMoney").addEventListener('input', function() {
         currentMoney = parseFloat(this.value) || 0;
         updateDisplay();
@@ -244,7 +236,6 @@ function updateDisplay() {
     let hours = Math.floor(secondsWorked / 3600);
     let mins = Math.floor((secondsWorked % 3600) / 60);
     document.getElementById("statusBar").innerHTML = (running ? "Running" : "Stopped") + " • " + hours + "h " + mins + "m";
-    checkAchievements();
 }
 
 function startTimer() {
@@ -255,7 +246,6 @@ function startTimer() {
         secondsWorked++;
         let earned = (hourlyRate / 3600);
         currentMoney += earned;
-        weeklyEarnings += earned;
         updateDisplay();
     }, 1000);
 }
@@ -270,10 +260,7 @@ function reset() {
     stopTimer();
     currentMoney = 0;
     secondsWorked = 0;
-    weeklyEarnings = 0;
-    achievements.forEach(a => a.unlocked = false);
     updateDisplay();
-    renderAchievements();
 }
 
 function addMoney() {
@@ -296,54 +283,6 @@ function subtractExpense() {
     updateDisplay();
     input.value = "";
     setTimeout(() => input.classList.remove("redInput"), 1000);
-}
-
-function checkAchievements() {
-    let newUnlock = false;
-    achievements.forEach(ach => {
-        if(ach.unlocked) return;
-        let unlock = false;
-        if(ach.name === "First Buck" && currentMoney >= 1) unlock = true;
-        if(ach.name === "Work 1hr" && secondsWorked >= 3600) unlock = true;
-        if(ach.name === "Work 2hr" && secondsWorked >= 7200) unlock = true;
-        if(ach.name === "Work 4hr" && secondsWorked >= 14400) unlock = true;
-        if(ach.name === "Work 8hr" && secondsWorked >= 28800) unlock = true;
-        if(ach.name === "$100 Week" && weeklyEarnings >= 100) unlock = true;
-        if(ach.name === "$200 Week" && weeklyEarnings >= 200) unlock = true;
-        
-        if(unlock) {
-            ach.unlocked = true;
-            newUnlock = true;
-            showPopup(ach.name + "!");
-        }
-    });
-    if(newUnlock) renderAchievements();
-}
-
-function renderAchievements() {
-    let html = "";
-    let count = 0;
-    achievements.forEach(ach => {
-        if(ach.unlocked) count++;
-        html += `<div class="achievement ${ach.unlocked ? 'unlocked' : ''}">${ach.unlocked ? '✓' : '○'} ${ach.name}</div>`;
-    });
-    document.getElementById("achievementList").innerHTML = html;
-    let badge = document.getElementById("achievementBadge");
-    if(count > 0) {
-        badge.style.display = "block";
-        badge.innerHTML = count;
-    } else {
-        badge.style.display = "none";
-    }
-}
-
-function showPopup(text) {
-    let popup = document.getElementById("popup");
-    popup.innerHTML = text;
-    popup.classList.add("show-popup");
-    setTimeout(() => {
-        popup.classList.remove("show-popup");
-    }, 2000);
 }
 
 function toggleSimpleMode() {
